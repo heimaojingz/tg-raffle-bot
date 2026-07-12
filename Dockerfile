@@ -13,5 +13,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD python -u main.py
-
+CMD rm -f /data/raffle.db && python -u main.py
