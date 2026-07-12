@@ -38,8 +38,8 @@ async def show_main_menu(update: Update, context, db):
         '\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\u2502\n\n'
         '<b>\U0001f4f3 \u6570\u636e\u6982\u89c8</b>\n'
         + L1 + "\n" +
-        f"  {L} \U0001f550 \u8fdb\u884c\u4e2d  <b>{{running:>4}}</b>  {L}\n" +
-        f"  {L} \U0001f3b3 \u5956\u54c1\u6c60  <b>{{pool:>4}}</b>  {L}\n" +
+        f"  {L} \U0001f550 \u8fdb\u884c\u4e2d  <b>{running:>4}</b>  {L}\n" +
+        f"  {L} \U0001f3b3 \u5956\u54c1\u6c60  <b>{pool:>4}</b>  {L}\n" +
         f"  {L} \u2705 \u5df2\u5b8c\u6210  <b>{{s[\"completed_activities\"]:>4}}</b>  {L}\n" +
         f"  {L} \U0001f443 \u603b\u53c2\u4e0e  <b>{{s[\"total_participants\"]:>4}}</b>  {L}\n" +
         L2
