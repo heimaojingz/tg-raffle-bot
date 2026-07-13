@@ -1,4 +1,4 @@
-# Create flow state machine - smart button-driven with minimal typing
+﻿# Create flow state machine - smart button-driven with minimal typing
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -438,7 +438,7 @@ async def _add_prize_done(update, context, count):
 
     current = context.user_data['create_data']['prizes']
 
-    lines = '\n'.join(['  \U0001f381 ' + html.escape(p['name']) + ' 脳 ' + str(p['count']) + '人' for p in current])
+    lines = '\n'.join(['  \U0001f381 ' + html.escape(p['name']) + ' × ' + str(p['count']) + '人' for p in current])
 
     msg = '✅ 已添加「' + html.escape(name) + '」✅' + str(count) + '人\n\n当前奖品：\n' + lines + '\n\n继续添加或点击完成？'
 
@@ -1162,7 +1162,7 @@ async def handle_create_callback(update, context, db):
 
         prizes = data_dict.get('prizes', [])
 
-        prize_lines = '\n'.join(['\U0001f4b0 ' + html.escape(p['name']) + ' 脳 ' + str(p['count']) for p in prizes]) if prizes else '暂无'
+        prize_lines = '\n'.join(['\U0001f4b0 ' + html.escape(p['name']) + ' × ' + str(p['count']) for p in prizes]) if prizes else '暂无'
 
         ch_list = data_dict.get('channels', [])
 
@@ -1398,7 +1398,7 @@ async def handle_publish_callback(update, context, db):
 
     prizes = await db.get_activity_prizes(activity_id)
 
-    prize_lines = '\n'.join(['\U0001f4b0 ' + html.escape(p['prize_name']) + ' 脳 ' + str(p['winner_count']) for p in prizes]) if prizes else '暂无'
+    prize_lines = '\n'.join(['\U0001f4b0 ' + html.escape(p['prize_name']) + ' × ' + str(p['winner_count']) for p in prizes]) if prizes else '暂无'
 
     a = await db.get_activity(activity_id)
 
@@ -1557,6 +1557,7 @@ async def _show_media_prompt(update, context):
     else:
 
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
+
 
 
 
