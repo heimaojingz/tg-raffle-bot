@@ -1,4 +1,4 @@
-﻿# Create flow state machine - smart button-driven with minimal typing
+# Create flow state machine - smart button-driven with minimal typing
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 
@@ -1200,11 +1200,11 @@ async def handle_create_callback(update, context, db):
 
                     ch_name = ch_name[:20] + '...'
 
-                publish_buttons.append([InlineKeyboardButton('\U0001f4e4 发布鍒' + ch_name, callback_data='pub_' + str(activity_id) + '_' + str(idx))])
+                publish_buttons.append([InlineKeyboardButton('\U0001f4e4 发布到' + ch_name, callback_data='pub_' + str(activity_id) + '_' + str(idx))])
 
         publish_buttons.append([InlineKeyboardButton('\U0001f519 返回主菜单', callback_data='menu_main')])
 
-        await query.edit_message_text('<b>✅ 活动 #' + str(activity_id) + ' 宸插垱寤猴紒</b>\n\n' + activity_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(publish_buttons), disable_web_page_preview=True)
+        await query.edit_message_text('<b>✅ 活动 #' + str(activity_id) + ' 已创建！</b>\n\n' + activity_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(publish_buttons), disable_web_page_preview=True)
 
         # Auto-publish to default channel
 
@@ -1557,6 +1557,7 @@ async def _show_media_prompt(update, context):
     else:
 
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
+
 
 
 
