@@ -61,15 +61,20 @@ def _check_rate_limit(key: str, max_count: int = 5, window_seconds: int = 60) ->
     _rate_limiter[key].append(now)
     return True
 
-def _get_bot_username(update) -> str:
-    """Get bot username without hardcoded fallback."""
+def _get_bot_username(update, context=None) -> str:
+    """Get bot username, trying update.bot then context.bot."""
     try:
         bot = update.get_bot()
         if bot and bot.username:
             return bot.username
     except Exception:
         pass
-    return 'cjyhq_bot'  # Final fallback only
+    try:
+        if context and hasattr(context, 'bot') and context.bot and context.bot.username:
+            return context.bot.username
+    except Exception:
+        pass
+    return ''  # No fallback; caller should handle empty
 
 # ═══════════════════════════════════════════════
 #  Helper
@@ -192,7 +197,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode='HTML'
         )
         return
-    bot_username = _get_bot_username(update)
+    bot_username = _get_bot_username(update, context)
     lines = ['🎉 <b>当前抽奖活动</b>\n━━━━━━━━━━━━━━━━━\n']
     for a in acts:
         cnt = await db.get_participant_count(a['id'])
@@ -258,7 +263,7 @@ async def cmd_event(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     prize_lines = "\n".join([f"  🎁 {html.escape(p['prize_name'])} × {p['winner_count']}人" for p in prizes]) or "  (无)"
 
-    bot_username = _get_bot_username(update)
+    bot_username = _get_bot_username(update, context)
     deeplink = f"https://t.me/{bot_username}?start=join_{aid}"
 
     text = (
@@ -457,7 +462,7 @@ async def cmd_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not a:
         await update.message.reply_text('活动不存在')
         return
-    bot_username = _get_bot_username(update)
+    bot_username = _get_bot_username(update, context)
     deeplink = f"https://t.me/{bot_username}?start=join_{aid}"
     deeplink_html = f'<a href="{deeplink}">\U0001f517 点击参与抽奖</a>'
     prizes = await db.get_activity_prizes(aid)
@@ -638,7 +643,7 @@ async def user_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("📭 当前没有进行中的抽奖活动。")
         return
 
-    bot_username = _get_bot_username(update)
+    bot_username = _get_bot_username(update, context)
     lines = ["<b>🎉 进行中的抽奖活动</b>\n"]
     for a in acts:
         cnt = await db.get_participant_count(a['id'])

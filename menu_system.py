@@ -1,4 +1,4 @@
-﻿# Menu system for Raffle Bot
+# Menu system for Raffle Bot
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 import html
 import io
@@ -12,7 +12,7 @@ def _get_bot_username(update) -> str:
             return bot.username
     except Exception:
         pass
-    return 'cjyhq_bot'
+    return ''
 
 async def _edit_or_send(update: Update, text: str, markup: InlineKeyboardMarkup):
     if update.callback_query:

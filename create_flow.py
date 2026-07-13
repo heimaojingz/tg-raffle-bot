@@ -66,7 +66,7 @@ def skip_btn(cb):
 
 
 
-def _get_bot_username(update):
+def _get_bot_username(update, context=None):
 
     try:
 
@@ -80,7 +80,17 @@ def _get_bot_username(update):
 
         pass
 
-    return 'cjyhq_bot'
+    try:
+
+        if context and hasattr(context, 'bot') and context.bot and context.bot.username:
+
+            return context.bot.username
+
+    except Exception:
+
+        pass
+
+    return ''
 
 
 
@@ -426,6 +436,28 @@ async def _resolve_channel_name(update, link: str) -> str:
     return None
 
 
+async def _resolve_chat_id(bot, link: str) -> str:
+    """Resolve a channel link to a chat_id usable by send_message.
+
+    Returns '' if unresolvable (caller should skip).
+    """
+    link = link.strip()
+    if link.startswith('https://t.me/+'):
+        # Private invite link — resolve via get_chat.
+        try:
+            chat = await bot.get_chat(link)
+            return str(chat.id)
+        except Exception as e:
+            logger.warning('Failed to resolve private link: ' + str(e))
+            return ''  # Cannot resolve
+    elif link.startswith('https://t.me/') or link.startswith('http://t.me/'):
+        # Public link → @username format
+        return '@' + link.rstrip('/').split('/')[-1].split('?')[0]
+    elif link.startswith('@'):
+        return link
+    return ''
+
+
 async def _add_prize_done(update, context, count):
 
     name = context.user_data.pop('_prize_name', None)
@@ -656,9 +688,9 @@ async def handle_create_callback(update, context, db):
 
                 [InlineKeyboardButton('⏰ 1小时后(' + t1.strftime('%H:%M') + ')', callback_data='create_time_' + t1.strftime('%Y-%m-%d %H:%M'))],
 
-                [InlineKeyboardButton('\U0001f319 浠婃櫄 20:00', callback_data='create_time_' + t2.strftime('%Y-%m-%d 20:00'))],
+                [InlineKeyboardButton('\U0001f319 今晚 20:00', callback_data='create_time_' + t2.strftime('%Y-%m-%d 20:00'))],
 
-                [InlineKeyboardButton('\U0001f4c5 鏄庡ぉ 20:00', callback_data='create_time_' + t3.strftime('%Y-%m-%d 20:00'))],
+                [InlineKeyboardButton('\U0001f4c5 明天 20:00', callback_data='create_time_' + t3.strftime('%Y-%m-%d 20:00'))],
 
                 [InlineKeyboardButton('✏️ 自定义时间', callback_data='create_time_custom')],
 
@@ -1106,7 +1138,7 @@ async def handle_create_callback(update, context, db):
 
                 t3 = (now + timedelta(days=1)).replace(hour=20, minute=0, second=0)
 
-                await query.edit_message_text(_step_text(6, 10, '开奖时间') + '\n选择开奖时间：', parse_mode='HTML', reply_markup=_kb([[InlineKeyboardButton('⏰ 1小时后(' + t1.strftime('%H:%M') + ')', callback_data='create_time_' + t1.strftime('%Y-%m-%d %H:%M'))], [InlineKeyboardButton('\U0001f319 浠婃櫄 20:00', callback_data='create_time_' + t2.strftime('%Y-%m-%d 20:00'))], [InlineKeyboardButton('\U0001f4c5 鏄庡ぉ 20:00', callback_data='create_time_' + t3.strftime('%Y-%m-%d 20:00'))], [InlineKeyboardButton('✏️ 自定义时间', callback_data='create_time_custom')], flow_back_btn, cancel_btn]))
+                await query.edit_message_text(_step_text(6, 10, '开奖时间') + '\n选择开奖时间：', parse_mode='HTML', reply_markup=_kb([[InlineKeyboardButton('⏰ 1小时后(' + t1.strftime('%H:%M') + ')', callback_data='create_time_' + t1.strftime('%Y-%m-%d %H:%M'))], [InlineKeyboardButton('\U0001f319 今晚 20:00', callback_data='create_time_' + t2.strftime('%Y-%m-%d 20:00'))], [InlineKeyboardButton('\U0001f4c5 明天 20:00', callback_data='create_time_' + t3.strftime('%Y-%m-%d 20:00'))], [InlineKeyboardButton('✏️ 自定义时间', callback_data='create_time_custom')], flow_back_btn, cancel_btn]))
 
             elif prev == Step.DRAW_COUNT:
 
@@ -1144,7 +1176,7 @@ async def handle_create_callback(update, context, db):
 
         data_dict = context.user_data.get('create_data', {})
 
-        data_dict['channel_id'] = '\n'.join([html.escape(ch['link']) for ch in data_dict.get('channels', [])])
+        data_dict['channel_id'] = '\n'.join([ch['link'] for ch in data_dict.get('channels', [])])
 
         activity_id = await db.create_activity(data_dict)
 
@@ -1152,7 +1184,7 @@ async def handle_create_callback(update, context, db):
 
         context.user_data.pop('create_step', None)
 
-        bot_username = _get_bot_username(update)
+        bot_username = _get_bot_username(update, context)
 
         deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
 
@@ -1207,58 +1239,31 @@ async def handle_create_callback(update, context, db):
         await query.edit_message_text('<b>✅ 活动 #' + str(activity_id) + ' 已创建！</b>\n\n' + activity_text, parse_mode='HTML', reply_markup=InlineKeyboardMarkup(publish_buttons), disable_web_page_preview=True)
 
         # Auto-publish to default channel
-
-        try:
-
+        default_ch_setting = await db.get_default_channel()
+        if default_ch_setting and default_ch_setting.get('link'):
+            default_link = default_ch_setting['link'].strip()
             for idx, ch in enumerate(ch_list):
-
-                default_ch = await db.get_default_channel()
-
-                if default_ch and html.escape(ch['link']) == default_ch.get('link'):
-
+                ch_link = ch['link'].strip()
+                if ch_link == default_link:
                     bot = update.get_bot()
-
-                    link = html.escape(ch['link'])
-
-                    chat_id = None
-
-                    if link.startswith('https://t.me/+'):
-
-                        chat_id = link
-
-                    elif link.startswith('https://t.me/'):
-
-                        chat_id = '@' + link.rstrip('/').split('/')[-1]
-
-                    elif link.startswith('@'):
-
-                        chat_id = link
-
-                    if chat_id and chat_id.startswith('@'):
-
-                        auto_deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
-
-                        auto_btn = InlineKeyboardButton('\U0001f517 点击参与抽奖', url=auto_deeplink)
-
-                        auto_kb = InlineKeyboardMarkup([[auto_btn]])
-
+                    chat_id = await _resolve_chat_id(bot, ch_link)
+                    if not chat_id:
+                        logger.warning(f'Auto-publish: cannot resolve chat_id for {ch_link}')
+                        continue
+                    bot_username = _get_bot_username(update, context)
+                    auto_deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
+                    auto_btn = InlineKeyboardButton('\U0001f517 点击参与抽奖', url=auto_deeplink)
+                    auto_kb = InlineKeyboardMarkup([[auto_btn]])
+                    try:
                         if data_dict.get('media_file_id') and data_dict.get('media_type') == 'photo':
-
                             await bot.send_photo(chat_id, data_dict['media_file_id'], caption=activity_text, parse_mode='HTML', reply_markup=auto_kb)
-
                         elif data_dict.get('media_file_id') and data_dict.get('media_type') == 'video':
-
                             await bot.send_video(chat_id, data_dict['media_file_id'], caption=activity_text, parse_mode='HTML', reply_markup=auto_kb)
-
                         else:
-
                             await bot.send_message(chat_id, activity_text, parse_mode='HTML', disable_web_page_preview=True, reply_markup=auto_kb)
-
                         logger.info('Auto-published activity #' + str(activity_id) + ' to default channel')
-
-        except Exception:
-
-            pass
+                    except Exception as e:
+                        logger.error(f'Auto-publish send failed for #{activity_id}: {e}')
 
         ch_sub_links = '\n'.join(['  \U0001f517 <a href="' + ch['link'] + '">' + (html.escape(ch['name']) or ch['link']) + '</a>' for ch in ch_list]) if ch_list else ''
 
@@ -1344,31 +1349,13 @@ async def handle_publish_callback(update, context, db):
 
     bot = update.get_bot()
 
-
-
-    chat_id = None
-
-    if ch.startswith('https://t.me/+'):
-
-        chat_id = ch
-
-    elif ch.startswith('https://t.me/'):
-
-        chat_id = '@' + ch.rstrip('/').split('/')[-1]
-
-    elif ch.startswith('@'):
-
-        chat_id = ch
-
-
+    chat_id = await _resolve_chat_id(bot, ch)
 
     if not chat_id:
 
-        await query.answer('无效的频道链接', show_alert=True)
+        await query.answer('无效的频道链接或无法解析', show_alert=True)
 
         return
-
-
 
     if chat_id.startswith('@'):
 
@@ -1390,7 +1377,7 @@ async def handle_publish_callback(update, context, db):
 
 
 
-    bot_username = _get_bot_username(update)
+    bot_username = _get_bot_username(update, context)
 
     deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
 
