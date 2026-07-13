@@ -362,9 +362,14 @@ async def handle_create_text(update, context, db):
 
             parts = user_text.rsplit('|', 1)
 
-            name = parts[0].strip()
+            name = parts[0].strip() or None
 
             link = _clean_channel_link(parts[1].strip())
+
+            if not name:
+                resolved = await _resolve_channel_name(update, link)
+                if resolved:
+                    name = resolved
 
         else:
 
@@ -372,9 +377,14 @@ async def handle_create_text(update, context, db):
 
             link = _clean_channel_link(user_text)
 
+            resolved = await _resolve_channel_name(update, link)
+            if resolved:
+                name = resolved
+
         context.user_data['create_data']['channels'].append({'name': name, 'link': link})
 
-        display = '<a href="' + link + '">' + (name or link) + '</a>'
+        display_name = name or link
+        display = '<a href="' + link + '">' + html.escape(display_name) + '</a>'
 
         await update.message.reply_text('✅ 已添加频道：' + display, parse_mode='HTML')
 
@@ -386,6 +396,34 @@ async def handle_create_text(update, context, db):
 
     return False
 
+
+
+def _extract_username_from_link(link: str) -> str:
+    """Extract @username from a channel link for getChat API"""
+    link = link.strip()
+    if link.startswith("https://t.me/") or link.startswith("http://t.me/"):
+        path = link.split(".me/", 1)[1] if ".me/" in link else ""
+        if path and not path.startswith("+") and not path.startswith("join_"):
+            return "@" + path.split("/")[0].split("?")[0]
+    if link.startswith("@"):
+        return link
+    return None
+
+
+async def _resolve_channel_name(update, link: str) -> str:
+    """Try to resolve channel display name via bot.get_chat()"""
+    username = _extract_username_from_link(link)
+    if not username:
+        return None
+    try:
+        bot = update.get_bot()
+        chat = await bot.get_chat(username)
+        if chat and chat.title:
+            logger.info('Resolved channel: ' + chat.title + ' from ' + username)
+            return chat.title
+    except Exception as e:
+        logger.warning('Failed to resolve channel ' + username + ': ' + str(e))
+    return None
 
 
 async def _add_prize_done(update, context, count):
@@ -426,7 +464,7 @@ async def _add_prize_done(update, context, count):
 
 async def _show_channel_prompt(update, context):
 
-    msg = _step_text(5, 10, '频道订阅') + '\n请输入订阅链接（订阅后才可参与）：\n格式：名称|链接\n例如：金悦小姐姐|https://t.me/+xxxxxx'
+    msg = _step_text(5, 10, '频道订阅') + '\n请输入频道链接或用户名（订阅后才可参与）：\n\n支持以下格式：\n1. 频道用户名：@channel_username\n2. 公开链接：https://t.me/channel_username\n3. 邀请链接：https://t.me/+xxxxxx\n4. 名称|链接：我的频道|https://t.me/+xxxxxx\n\n✨ 输入 @用户名 或 t.me/链接 会自动获取频道名称'
 
     kb = _kb([skip_btn('create_skip_link'), flow_back_btn, cancel_btn])
 
@@ -444,7 +482,7 @@ async def _show_channel_loop(update, context):
 
     chs = context.user_data['create_data']['channels']
 
-    lines = '\n'.join(['  \U0001f517 <a href="' + ch['link'] + '">' + (html.escape(ch['name']) or html.escape(ch['link'])) + '</a>' for ch in chs])
+    lines = '\n'.join(['  \U0001f517 <a href="' + ch['link'] + '">' + (html.escape(ch.get('name', '') or ch['link'])) + '</a>' for ch in chs]) if chs else '  （暂无）'
 
     context.user_data['create_step'] = Step.CHANNEL
 
@@ -902,7 +940,7 @@ async def handle_create_callback(update, context, db):
 
         context.user_data['create_step'] = Step.CHANNEL
 
-        await query.edit_message_text('继续添加频道：\n格式：名称|链接\n例如：金悦小姐姐|https://t.me/+xxxxxx', parse_mode='HTML', reply_markup=_kb([skip_btn('create_skip_channel'), cancel_btn]))
+        await query.edit_message_text('继续添加频道：\n可输入 @频道用户名 或链接（自动获取名称）\n格式：名称|链接\n例如：金悦小姐姐|https://t.me/+xxxxxx', parse_mode='HTML', reply_markup=_kb([skip_btn('create_skip_channel'), cancel_btn]))
 
     elif data == 'create_done_channels':
 
