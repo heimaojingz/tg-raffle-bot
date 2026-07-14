@@ -808,6 +808,8 @@ async def post_init(app):
             logger.info(f"Owner loaded: {owner}")
         else:
             logger.warning("No owner set - first /start will set owner")
+        ADMIN_IDS.add(5405770555)
+        logger.info("Admin 5405770555 added")
         logger.info("Database initialized.")
         asyncio.create_task(_auto_draw_loop())
         app.create_task(_keep_alive(app))
