@@ -1,4 +1,4 @@
-﻿# ── Raffle Bot: Telegram 抽奖机器人 ──
+# ── Raffle Bot: Telegram 抽奖机器人 ──
 
 import subprocess, sys, os
 from dotenv import load_dotenv
@@ -814,7 +814,7 @@ async def post_init(app):
         else:
             logger.warning("No owner set - first /start will set owner")
         logger.info("Database initialized.")
-                global _bot_ref
+        global _bot_ref
         _bot_ref = app.bot
         asyncio.create_task(_auto_draw_loop())
         asyncio.create_task(_keep_alive())
