@@ -813,6 +813,14 @@ async def post_init(app):
         logger.info("Database initialized.")
         asyncio.create_task(_auto_draw_loop())
         app.create_task(_keep_alive(app))
+        try:
+            from telegram import BotCommand
+            await app.bot.set_my_commands([
+                BotCommand("start", "打开主菜单 / 查看活动"),
+            ])
+            logger.info("Bot commands set")
+        except Exception as e:
+            logger.warning(f"Failed to set commands: {e}")
     except Exception as e:
         logger.error(f"post_init error: {e}", exc_info=True)
         raise
