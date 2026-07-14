@@ -112,21 +112,16 @@ async def is_super_admin(update: Update) -> bool:
         return True
     return await db.is_owner(uid)
 
-_bot_ref = None  # Set in post_init for keep-alive
-
-async def _keep_alive():
+async def _keep_alive(app):
     """Periodic keep-alive ping to prevent Railway from sleeping."""
-    global _bot_ref
+    await asyncio.sleep(30)
     while True:
-        await asyncio.sleep(600)  # 10 minutes
-        if _bot_ref:
-            try:
-                me = await _bot_ref.get_me()
-                logger.info(f"Keep-alive: @{me.username}")
-            except Exception as e:
-                logger.warning(f"Keep-alive failed: {e}")
-        else:
-            logger.warning("Keep-alive: no bot ref")
+        try:
+            me = await app.bot.get_me()
+            logger.info(f"Keep-alive: @{me.username}")
+        except Exception as e:
+            logger.warning(f"Keep-alive error: {e}")
+        await asyncio.sleep(600)
 
 async def _auto_draw_loop():
     while True:
@@ -814,10 +809,8 @@ async def post_init(app):
         else:
             logger.warning("No owner set - first /start will set owner")
         logger.info("Database initialized.")
-        global _bot_ref
-        _bot_ref = app.bot
         asyncio.create_task(_auto_draw_loop())
-        asyncio.create_task(_keep_alive())
+        app.create_task(_keep_alive(app))
     except Exception as e:
         logger.error(f"post_init error: {e}", exc_info=True)
         raise
@@ -1067,6 +1060,7 @@ def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, keyword_handler), group=1)
 
     logger.info("Bot starting...")
+    app.add_error_handler(lambda u, c: logger.error(f"Unhandled error: {c.error}"))
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
