@@ -1310,138 +1310,76 @@ async def handle_create_callback(update, context, db):
 async def handle_publish_callback(update, context, db):
 
     query = update.callback_query
-
     data = query.data
 
-    await query.answer()
+    try:
+        parts = data.replace("pub_", "").split("_")
+        activity_id = int(parts[0])
+        ch_index = int(parts[1])
 
-
-
-    parts = data.replace('pub_', '').split('_')
-
-    activity_id = int(parts[0])
-
-    ch_index = int(parts[1])
-
-
-
-    a = await db.get_activity(activity_id)
-
-    if not a:
-
-        await query.answer('活动不存在', show_alert=True)
-
-        return
-
-
-
-    ch_list = [ch.strip() for ch in a['channel_id'].split('\n') if ch.strip()] if a['channel_id'] else []
-
-    if ch_index >= len(ch_list):
-
-        await query.answer('频道不存在', show_alert=True)
-
-        return
-
-
-
-    ch = ch_list[ch_index]
-
-    bot = update.get_bot()
-
-    chat_id = await _resolve_chat_id(bot, ch)
-
-    if not chat_id:
-
-        await query.answer('无效的频道链接或无法解析', show_alert=True)
-
-        return
-
-    if chat_id.startswith('@'):
-
-        try:
-
-            bot_member = await bot.get_chat_member(chat_id, bot.id)
-
-            if bot_member.status not in ['administrator', 'creator', 'member']:
-
-                await query.answer('机器人不是 ' + chat_id + ' 的成员，请先将机器人加入频道并设为管理员', show_alert=True)
-
-                return
-
-        except Exception:
-
-            await query.answer('无法访问 ' + chat_id + '，请确保机器人已在频道中且为管理员', show_alert=True)
-
+        a = await db.get_activity(activity_id)
+        if not a:
+            await query.answer("活动不存在", show_alert=True)
             return
 
+        ch_list = [ch.strip() for ch in a["channel_id"].split("\n") if ch.strip()] if a["channel_id"] else []
+        if ch_index >= len(ch_list):
+            await query.answer("频道不存在", show_alert=True)
+            return
 
+        ch = ch_list[ch_index]
+        bot = update.get_bot()
+        chat_id = await _resolve_chat_id(bot, ch)
+        if not chat_id:
+            await query.answer("无效的频道链接或无法解析", show_alert=True)
+            return
 
-    bot_username = _get_bot_username(update, context)
+        if chat_id.startswith("@"):
+            try:
+                bot_member = await bot.get_chat_member(chat_id, bot.id)
+                if bot_member.status not in ["administrator", "creator", "member"]:
+                    await query.answer("机器人不是 " + chat_id + " 的成员，请先将机器人加入频道并设为管理员", show_alert=True)
+                    return
+            except Exception:
+                await query.answer("无法访问 " + chat_id + "，请确保机器人已在频道中且为管理员", show_alert=True)
+                return
 
-    deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
+        bot_username = _get_bot_username(update, context)
+        deeplink = "https://t.me/" + bot_username + "?start=join_" + str(activity_id)
+        deeplink_btn = InlineKeyboardButton("\U0001f517 点击参与抽奖", url=deeplink)
 
-    deeplink_btn = InlineKeyboardButton('\U0001f517 点击参与抽奖', url=deeplink)
+        prizes = await db.get_activity_prizes(activity_id)
+        prize_lines = "\n".join(["\U0001f4b0 " + html.escape(p["prize_name"]) + " \u00d7 " + str(p["winner_count"]) for p in prizes]) if prizes else "暂无"
 
-    prizes = await db.get_activity_prizes(activity_id)
+        ch_list2 = [ch.strip() for ch in a["channel_id"].split("\n") if ch.strip()] if a["channel_id"] else []
+        ch_links = [{"link": ch, "name": None} for ch in ch_list2]
 
-    prize_lines = '\n'.join(['\U0001f4b0 ' + html.escape(p['prize_name']) + ' × ' + str(p['winner_count']) for p in prizes]) if prizes else '暂无'
+        bcast = db.format_activity_broadcast(
+            title=html.escape(a["title"]),
+            description=html.escape(a.get("description", "")),
+            contact=html.escape(a.get("contact", "")),
+            prize_lines=prize_lines,
+            draw_type=a["draw_type"],
+            draw_time=a.get("draw_time"),
+            draw_count=a.get("draw_count", 0),
+            channel_links=ch_links,
+            deeplink_html="<a href=\" + deeplink + \">\U0001f517 点击参与抽奖</a>",
+        )
 
-    a = await db.get_activity(activity_id)
+        reply_kb = InlineKeyboardMarkup([[deeplink_btn]])
 
-    ch_list = [ch.strip() for ch in a['channel_id'].split('\n') if ch.strip()] if a['channel_id'] else []
-
-    ch_links = [{'link': ch, 'name': None} for ch in ch_list]
-
-    bcast = db.format_activity_broadcast(
-
-        title=html.escape(a['title']),
-
-        description=html.escape(a.get('description', '')),
-
-        contact=html.escape(a.get('contact', '')),
-
-        prize_lines=prize_lines,
-
-        draw_type=a['draw_type'],
-
-        draw_time=a.get('draw_time'),
-
-        draw_count=a.get('draw_count', 0),
-
-        channel_links=ch_links,
-
-        deeplink_html='<a href="' + deeplink + '">\U0001f517 点击参与抽奖</a>',
-
-    )
-
-    reply_kb = InlineKeyboardMarkup([[deeplink_btn]])
-
-    try:
-
-        if a.get('media_file_id') and a.get('media_type') == 'photo':
-
-            await bot.send_photo(chat_id, a['media_file_id'], caption=bcast, parse_mode='HTML', reply_markup=reply_kb)
-
-        elif a.get('media_file_id') and a.get('media_type') == 'video':
-
-            await bot.send_video(chat_id, a['media_file_id'], caption=bcast, parse_mode='HTML', reply_markup=reply_kb)
-
+        if a.get("media_file_id") and a.get("media_type") == "photo":
+            await bot.send_photo(chat_id, a["media_file_id"], caption=bcast, parse_mode="HTML", reply_markup=reply_kb)
+        elif a.get("media_file_id") and a.get("media_type") == "video":
+            await bot.send_video(chat_id, a["media_file_id"], caption=bcast, parse_mode="HTML", reply_markup=reply_kb)
         else:
+            await bot.send_message(chat_id, bcast, parse_mode="HTML", disable_web_page_preview=True, reply_markup=reply_kb)
 
-            await bot.send_message(chat_id, bcast, parse_mode='HTML', disable_web_page_preview=True, reply_markup=reply_kb)
-
-        await query.answer('✅ 已发布！', show_alert=True)
+        await query.answer("\u2705 \u5df2\u53d1\u5e03\uff01", show_alert=True)
 
     except Exception as e:
-
-        await query.answer('❌ 发布失败: ' + str(e), show_alert=True)
-
-
-
-
-
-
+        logger.error(f"publish error: {e}", exc_info=True)
+        await query.answer("\u274c \u53d1\u5e03\u5931\u8d25: " + str(e), show_alert=True)
 
 async def _show_confirm(update, context, db):
 
