@@ -173,7 +173,7 @@ async def show_operators_menu(update, context, db):
     if ops:
         for o in ops:
             from_user = o.get('added_by', 0)
-            lines.append(f'  \U0001f464 User #{o["user_id"]} (\u6dfb\u52a0\u8005: #{from_user})')
+            uid = html.escape(str(o['user_id'])); adder = html.escape(str(from_user)); lines.append(f'  \U0001f464 User #{uid} (\u6dfb\u52a0\u8005: #{adder})')
     else:
         lines.append('  \u6682\u65e0\u64cd\u4f5c\u5458\n')
     lines.append('')
