@@ -51,6 +51,7 @@ async def show_main_menu(update: Update, context, db):
          InlineKeyboardButton('\U0001f4ca \u6570\u636e\u7edf\u8ba1', callback_data='menu_stats')],
         [InlineKeyboardButton('\U0001f465 \u64cd\u4f5c\u5458\u7ba1\u7406', callback_data='menu_operators'),
          InlineKeyboardButton('\U0001f4c1 \u5907\u4efd', callback_data='menu_backup')],
+        [InlineKeyboardButton('\u25b6\ufe0f \u8fd4\u56de\u9996\u9875', callback_data='menu_start')],
     ]
     await _edit_or_send(update, text, InlineKeyboardMarkup(keyboard))
 
@@ -79,6 +80,11 @@ async def menu_router(update, context, db):
 
         elif data == 'menu_backup':
             await show_backup_menu(update, context, db)
+
+        elif data == 'menu_start':
+            # Re-run the /start flow - show admin menu or activity list
+            from main import start
+            await start(update, context)
 
         elif data.startswith('op_'):
             await handle_operator_action(update, context, db)
