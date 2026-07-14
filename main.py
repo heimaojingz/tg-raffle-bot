@@ -1,4 +1,4 @@
-# ── Raffle Bot: Telegram 抽奖机器人 ──
+﻿# ── Raffle Bot: Telegram 抽奖机器人 ──
 
 import subprocess, sys, os
 from dotenv import load_dotenv
@@ -111,6 +111,22 @@ async def is_super_admin(update: Update) -> bool:
     if uid in ADMIN_IDS:
         return True
     return await db.is_owner(uid)
+
+_bot_ref = None  # Set in post_init for keep-alive
+
+async def _keep_alive():
+    """Periodic keep-alive ping to prevent Railway from sleeping."""
+    global _bot_ref
+    while True:
+        await asyncio.sleep(600)  # 10 minutes
+        if _bot_ref:
+            try:
+                me = await _bot_ref.get_me()
+                logger.info(f"Keep-alive: @{me.username}")
+            except Exception as e:
+                logger.warning(f"Keep-alive failed: {e}")
+        else:
+            logger.warning("Keep-alive: no bot ref")
 
 async def _auto_draw_loop():
     while True:
@@ -798,7 +814,10 @@ async def post_init(app):
         else:
             logger.warning("No owner set - first /start will set owner")
         logger.info("Database initialized.")
+                global _bot_ref
+        _bot_ref = app.bot
         asyncio.create_task(_auto_draw_loop())
+        asyncio.create_task(_keep_alive())
     except Exception as e:
         logger.error(f"post_init error: {e}", exc_info=True)
         raise
