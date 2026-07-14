@@ -187,6 +187,13 @@ async def list_active_activities():
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]
 
+async def list_activities():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM activities ORDER BY id DESC")
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
 async def update_activity_status(activity_id: int, status: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE activities SET status = ? WHERE id = ?", (status, activity_id))
