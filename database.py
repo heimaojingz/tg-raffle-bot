@@ -116,7 +116,8 @@ async def list_prizes():
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM prizes ORDER BY id")
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 # ── Activity management ──
 
@@ -146,19 +147,22 @@ async def get_activity(activity_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM activities WHERE id = ?", (activity_id,))
-        return await cursor.fetchone()
+        row = await cursor.fetchone()
+        return dict(row) if row else None
 
 async def get_activity_prizes(activity_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM activity_prizes WHERE activity_id = ? ORDER BY id", (activity_id,))
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 async def list_activities_by_status(status: str):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM activities WHERE status = ? ORDER BY id DESC", (status,))
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 async def update_activity_media(activity_id: int, file_id: str, media_type: str) -> bool:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -180,7 +184,8 @@ async def list_active_activities():
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM activities WHERE status = 'active' ORDER BY id DESC")
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 async def update_activity_status(activity_id: int, status: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -235,7 +240,8 @@ async def get_participants(activity_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM participants WHERE activity_id = ? ORDER BY joined_at", (activity_id,))
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 async def get_participant_count(activity_id: int) -> int:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -286,7 +292,8 @@ async def draw_winners(activity_id: int) -> list:
                     "SELECT * FROM winners WHERE activity_id = ? ORDER BY prize_level, id",
                     (activity_id,)
                 )
-                return await cursor.fetchall()
+                rows = await cursor.fetchall()
+                return [dict(r) for r in rows]
             return []
 
         # Get participants
@@ -345,7 +352,8 @@ async def get_winners(activity_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM winners WHERE activity_id = ? ORDER BY prize_level, id", (activity_id,))
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
 
 # ── Stats ──
 
@@ -520,4 +528,5 @@ async def list_operators():
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute("SELECT * FROM operators ORDER BY added_at")
-        return await cursor.fetchall()
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
