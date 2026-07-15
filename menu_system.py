@@ -80,6 +80,25 @@ async def menu_router(update, context, db):
         elif data == 'menu_backup':
             await show_backup_menu(update, context, db)
 
+        elif data.startswith('op_add'):
+            # Set waiting state and ask for user ID
+            context.user_data['_waiting_op_add'] = True
+            await query.edit_message_text(
+                '\U0001f464 \u8bf7\u8f93\u5165\u7528\u6237ID\uff08\u6570\u5b57\uff09\u6216\u8f6c\u53d1\u4ed6\u7684\u6d88\u606f\uff1a',
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton('\u274c \u53d6\u6d88', callback_data='menu_operators')
+                ]])
+            )
+
+        elif data.startswith('op_del_'):
+            uid = int(data.replace('op_del_', ''))
+            ok = await db.remove_operator(uid)
+            if ok:
+                await query.answer('\u2705 \u5df2\u79fb\u9664', show_alert=True)
+            else:
+                await query.answer('\u274c \u79fb\u9664\u5931\u8d25', show_alert=True)
+            await show_operators_menu(update, context, db)
+
         elif data.startswith('op_'):
             await handle_operator_action(update, context, db)
 
