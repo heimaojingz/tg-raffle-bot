@@ -119,25 +119,30 @@ async def menu_router(update, context, db):
         await query.answer(f'\u9519\u8bef: {e}', show_alert=True)
 
 async def show_activities_menu(update, context, db):
-    """Show list of all activities with delete buttons."""
+    # Show cleaner activity list
     query = update.callback_query
     acts = await db.list_activities()
     if not acts:
-        await query.edit_message_text('\U0001f4f1 \u6ca1\u6709\u6d3b\u52a8\u3002\n\n\u4f7f\u7528 \u521b\u5efa\u6d3b\u52a8 \u6765\u65b0\u5efa\u4e00\u4e2a\u3002', parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355', callback_data='menu_main')]]))
+        await query.edit_message_text("\U0001f4f1 \u6ca1\u6709\u6d3b\u52a8\u3002\n\n\u4f7f\u7528 \u521b\u5efa\u6d3b\u52a8 \u6765\u65b0\u5efa\u4e00\u4e2a\u3002", parse_mode="HTML", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355", callback_data="menu_main")]]))
         return
 
-    lines = ['<b>\U0001f4cb \u6d3b\u52a8\u5217\u8868</b>\\n']
     keyboard = []
     for a in acts:
-        st = a.get('status', 'draft')
-        emoji = {'active': '\U0001f7e2', 'draft': '\u26aa', 'completed': '\u2705', 'cancelled': '\U0001f534'}.get(st, '\u26aa')
-        lines.append(f"{emoji} <b>#{a['id']}</b> {a['title']} ({st})")
-        keyboard.append([InlineKeyboardButton(emoji + ' #' + str(a['id']) + ' \u274c \u5220\u9664', callback_data='act_del_' + str(a['id']))])
-    lines.append('')
-    lines.append('\u70b9\u51fb\u4e0b\u65b9\u6309\u94ae\u5220\u9664\u5bf9\u5e94\u6d3b\u52a8\uff08\u4e0d\u53ef\u6062\u590d\uff09')
-    text = '\\n'.join(lines)
-    keyboard.append([InlineKeyboardButton('\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355', callback_data='menu_main')])
-    await _edit_or_send(update, text, InlineKeyboardMarkup(keyboard))
+        st = a.get("status", "draft")
+        emoji = {"active": "\U0001f7e2", "draft": "\u26aa", "completed": "\u2705", "cancelled": "\U0001f534"}.get(st, "\u26aa")
+        title = a["title"][:18] if a.get("title") else "\u65e0\u6807\u9898"
+        label = emoji + " #" + str(a["id"]) + " " + title
+        keyboard.append([
+            InlineKeyboardButton(label, callback_data="act_view_" + str(a["id"])),
+            InlineKeyboardButton("\u274c \u5220\u9664", callback_data="act_del_" + str(a["id"]))
+        ])
+
+    header = "<b>\U0001f4cb \u6d3b\u52a8\u5217\u8868</b>\n"
+    header += "\u2500" * 16 + "\n"
+    header += "\u5171 " + str(len(acts)) + " \u4e2a\u6d3b\u52a8\n"
+    header += "\u2500" * 16 + "\n"
+    keyboard.append([InlineKeyboardButton("\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355", callback_data="menu_main")])
+    await _edit_or_send(update, header, InlineKeyboardMarkup(keyboard))
 
 async def show_prize_menu(update, context, db):
     """Show prize management menu."""
@@ -209,20 +214,31 @@ async def handle_operator_action(update, context, db):
     await update.callback_query.answer("请使用按钮操作", show_alert=True)
 
 async def handle_activity_action(update, context, db):
-    """Handle activity deletion with confirmation."""
+    # Handle activity view, delete and confirm delete
     query = update.callback_query
     data = query.data
-    if data.startswith('act_del_'):
+    if data.startswith('act_view_'):
+        aid = int(data.replace('act_view_', ''))
+        a = await db.get_activity(aid)
+        if a:
+            st = a['status']
+            emoji = {'active': '\U0001f7e2 \u8fdb\u884c\u4e2d', 'draft': '\u26aa \u8349\u7a3f', 'completed': '\u2705 \u5df2\u5b8c\u6210', 'cancelled': '\U0001f534 \u5df2\u53d6\u6d88'}.get(st, st)
+            info = '<b>\U0001f4cb \u6d3b\u52a8 #' + str(aid) + '</b>\n\n'
+            info += '\U0001f3af <b>\u6807\u9898:</b> ' + a['title'] + '\n'
+            info += '\U0001f4c5 <b>\u72b6\u6001:</b> ' + emoji + '\n'
+            if a.get('description'):
+                info += '\U0001f4dd <b>\u8bf4\u660e:</b> ' + a['description'][:100] + '\n'
+            info += '\U0001f465 <b>\u53c2\u4e0e:</b> ' + str(await db.get_participant_count(aid)) + '\u4eba'
+            await query.edit_message_text(info, parse_mode='HTML', reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('\U0001f519 \u8fd4\u56de\u5217\u8868', callback_data='menu_activities')]]))
+        else:
+            await query.answer('\u6d3b\u52a8\u4e0d\u5b58\u5728', show_alert=True)
+    elif data.startswith('act_del_'):
         aid = int(data.replace('act_del_', ''))
         confirm_kb = InlineKeyboardMarkup([[
             InlineKeyboardButton('\u2705 \u786e\u8ba4\u5220\u9664', callback_data='act_confirm_del_' + str(aid)),
             InlineKeyboardButton('\u274c \u53d6\u6d88', callback_data='menu_activities')
         ]])
-        await query.edit_message_text(
-            '\u26a0\ufe0f <b>\u786e\u8ba4\u5220\u9664\u6d3b\u52a8 #' + str(aid) + '\uff1f</b>\\n\\n\u5220\u9664\u540e\u6240\u6709\u53c2\u4e0e\u8bb0\u5f55\u3001\u5956\u54c1\u548c\u5f00\u5956\u6570\u636e\u5c06\u6c38\u4e45\u4e22\u5931\uff0c\u4e0d\u53ef\u6062\u590d\uff01',
-            parse_mode='HTML',
-            reply_markup=confirm_kb
-        )
+        await query.edit_message_text('\u26a0\ufe0f <b>\u786e\u8ba4\u5220\u9664\u6d3b\u52a8 #' + str(aid) + '\uff1f</b>\n\n\u5220\u9664\u540e\u6240\u6709\u53c2\u4e0e\u8bb0\u5f55\u3001\u5956\u54c1\u548c\u5f00\u5956\u6570\u636e\u5c06\u6c38\u4e45\u4e22\u5931\uff0c\u4e0d\u53ef\u6062\u590d\uff01', parse_mode='HTML', reply_markup=confirm_kb)
     elif data.startswith('act_confirm_del_'):
         aid = int(data.replace('act_confirm_del_', ''))
         ok = await db.delete_activity(aid)
