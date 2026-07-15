@@ -1043,11 +1043,19 @@ def main():
 
     # Callback for create flow (catches create_* callbacks not handled by menu)
     async def create_cb_handler(update, context):
-        if update.callback_query and update.callback_query.data.startswith('pub_'):
-            return await create_flow.handle_publish_callback(update, context, db)
-        return await create_flow.handle_create_callback(update, context, db)
+        try:
+            if update.callback_query and update.callback_query.data.startswith('pub_'):
+                return await create_flow.handle_publish_callback(update, context, db)
+            return await create_flow.handle_create_callback(update, context, db)
+        except Exception as e:
+            logger.error(f"create_cb error: {e}", exc_info=True)
+            try:
+                await update.callback_query.answer(f"\u274c \u9519\u8bef: {e}", show_alert=True)
+            except:
+                pass
+            return False
     app.add_handler(CallbackQueryHandler(
-        create_cb_handler, pattern='^(create_|pub_)'), group=0)
+        create_cb_handler, pattern="^(create_|pub_)"), group=0)
 
 # Media handler for /media command (sets media for existing activities)
     async def media_set_handler(update, context):
