@@ -1281,9 +1281,16 @@ async def handle_publish_callback(update, context, db):
             await query.answer("活动不存在", show_alert=True)
             return
 
-        ch_list = [ch.strip() for ch in a["channel_id"].split("\n") if ch.strip()] if a["channel_id"] else []
+        ch_list_raw = [ch.strip() for ch in a["channel_id"].split("\n") if ch.strip()] if a["channel_id"] else []
+        ch_list = []
+        for c in ch_list_raw:
+            if "|" in c:
+                parts = c.split("|", 1)
+                ch_list.append(parts[1])
+            else:
+                ch_list.append(c)
         if ch_index >= len(ch_list):
-            await query.answer("频道不存在", show_alert=True)
+            await query.answer("?????", show_alert=True)
             return
 
         ch = ch_list[ch_index]
