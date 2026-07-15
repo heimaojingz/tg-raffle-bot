@@ -1136,7 +1136,7 @@ async def handle_create_callback(update, context, db):
 
         data_dict = context.user_data.get('create_data', {})
 
-        data_dict['channel_id'] = '\n'.join([ch['link'] for ch in data_dict.get('channels', [])])
+        data_dict['channel_id'] = '\n'.join([(ch['name'] + '|' + ch['link']) if ch.get('name') else ch['link'] for ch in data_dict.get('channels', [])])
 
         data_dict['status'] = 'active'
 
@@ -1311,7 +1311,13 @@ async def handle_publish_callback(update, context, db):
         prize_lines = "\n".join(["\U0001f4b0 " + html.escape(p["prize_name"]) + " \u00d7 " + str(p["winner_count"]) for p in prizes]) if prizes else "暂无"
 
         ch_list2 = [ch.strip() for ch in a["channel_id"].split("\n") if ch.strip()] if a["channel_id"] else []
-        ch_links = [{"link": ch, "name": None} for ch in ch_list2]
+        ch_links = []
+        for c in ch_list2:
+            if "|" in c:
+                parts = c.split("|", 1)
+                ch_links.append({"name": parts[0], "link": parts[1]})
+            else:
+                ch_links.append({"name": None, "link": c})
 
         bcast = db.format_activity_broadcast(
             title=html.escape(a["title"]),
