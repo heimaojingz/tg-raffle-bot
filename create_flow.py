@@ -1335,7 +1335,7 @@ async def handle_publish_callback(update, context, db):
             draw_time=a.get("draw_time"),
             draw_count=a.get("draw_count", 0),
             channel_links=ch_links,
-            deeplink_html="<a href=\" + deeplink + \">\U0001f517 点击参与抽奖</a>",
+            deeplink_html='<a href="' + deeplink + '">\U0001f517 点击参与抽奖</a>',
         )
 
         reply_kb = InlineKeyboardMarkup([[deeplink_btn]])
