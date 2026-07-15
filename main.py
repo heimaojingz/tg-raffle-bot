@@ -871,8 +871,14 @@ def main():
         elif msg.text:
             txt = msg.text.strip()
             if txt.startswith('@'):
-                uid = txt  # Store username as marker
-                name = txt
+                # Try to resolve @username to user ID via bot API
+                try:
+                    chat = await context.bot.get_chat(txt)
+                    uid = chat.id
+                    name = getattr(chat, 'first_name', '') or getattr(chat, 'title', '') or txt
+                except Exception:
+                    await msg.reply_text('⚠️ 无法解析用户名，请直接发送数字ID或转发用户消息')
+                    return True
             else:
                 try:
                     uid = int(txt)

@@ -179,25 +179,27 @@ async def show_stats_menu(update, context, db):
     await _edit_or_send(update, text, kb)
 
 async def show_operators_menu(update, context, db):
-    """Show operator management."""
+    """Show operator management with add/delete buttons."""
     query = update.callback_query
     ops = await db.list_operators()
-    lines = ['<b>\U0001f465 \u64cd\u4f5c\u5458\u7ba1\u7406</b>\n']
+    lines = ['<b>👥 操作员管理</b>\n']
+    keyboard = []
     if ops:
         for o in ops:
             from_user = o.get('added_by', 0)
-            uid = html.escape(str(o['user_id'])); adder = html.escape(str(from_user)); lines.append(f'  \U0001f464 User #{uid} (\u6dfb\u52a0\u8005: #{adder})')
+            uid_str = html.escape(str(o['user_id']))
+            adder_str = html.escape(str(from_user))
+            lines.append(f'  👤 User #{uid_str} (添加者: #{adder_str})')
+            keyboard.append([
+                InlineKeyboardButton(f'👤 #{o["user_id"]} ❌ 删除', callback_data=f'op_del_{o["user_id"]}')
+            ])
     else:
-        lines.append('  \u6682\u65e0\u64cd\u4f5c\u5458\n')
+        lines.append('  暂无操作员\n')
     lines.append('')
-    lines.append('\u53d1\u9001 /op add &lt;id&gt; \u6dfb\u52a0\u64cd\u4f5c\u5458')
-    lines.append('\u53d1\u9001 /op remove &lt;id&gt; \u5220\u9664\u64cd\u4f5c\u5458')
+    keyboard.append([InlineKeyboardButton('➕ 添加操作员', callback_data='op_add_btn')])
+    keyboard.append([InlineKeyboardButton('🔙 返回主菜单', callback_data='menu_main')])
 
-    kb = InlineKeyboardMarkup([[
-        InlineKeyboardButton('\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355', callback_data='menu_main')
-    ]])
-    await _edit_or_send(update, '\n'.join(lines), kb)
-
+    await _edit_or_send(update, '\n'.join(lines), InlineKeyboardMarkup(keyboard))
 async def show_backup_menu(update, context, db):
     """Show backup menu."""
     text = '<b>\U0001f4c1 \u5907\u4efd</b>\n\n\u4f7f\u7528 /backup \u4e0b\u8f7d\u6570\u636e\u5e93\u5907\u4efd'
@@ -208,7 +210,7 @@ async def show_backup_menu(update, context, db):
 
 async def handle_operator_action(update, context, db):
     """Handle operator management actions."""
-    await update.callback_query.answer('\u8bf7\u4f7f\u7528 /op add &lt;id&gt; \u6216 /op remove &lt;id&gt; \u547d\u4ee4', show_alert=True)
+    await update.callback_query.answer("请使用按钮操作", show_alert=True)
 
 async def handle_activity_action(update, context, db):
     """Handle activity actions."""

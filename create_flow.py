@@ -13,9 +13,7 @@ import html
 from datetime import datetime, timedelta
 
 
-
 logger = logging.getLogger(__name__)
-
 
 
 class Step:
@@ -49,21 +47,17 @@ class Step:
     CONFIRM = 'confirm'
 
 
-
 def _kb(buttons):
 
     return InlineKeyboardMarkup(buttons)
 
 
-
 cancel_btn = [InlineKeyboardButton('❌ 取消', callback_data='create_cancel_btn')]
-
 
 
 def skip_btn(cb):
 
     return [InlineKeyboardButton('▶ 跳过', callback_data=cb)]
-
 
 
 def _get_bot_username(update, context=None):
@@ -93,7 +87,6 @@ def _get_bot_username(update, context=None):
     return ''
 
 
-
 def _clean_channel_link(link: str) -> str:
 
     link = link.strip()
@@ -117,9 +110,7 @@ def _clean_channel_link(link: str) -> str:
     return link
 
 
-
 flow_back_btn = [InlineKeyboardButton('\U0001f519 上一步', callback_data='create_back')]
-
 
 
 def _step_text(num, total=10, label=""):
@@ -131,7 +122,6 @@ def _step_text(num, total=10, label=""):
         base += ' — ' + label
 
     return base + '</b>'
-
 
 
 async def start_create_flow(update, context, db):
@@ -169,7 +159,6 @@ async def start_create_flow(update, context, db):
     )
 
 
-
 async def handle_create_text(update, context, db):
 
     step = context.user_data.get('create_step')
@@ -181,7 +170,6 @@ async def handle_create_text(update, context, db):
     user_text = update.message.text.strip()
 
 
-
     if step == Step.TITLE:
 
         context.user_data['create_data']['title'] = user_text
@@ -191,7 +179,6 @@ async def handle_create_text(update, context, db):
         await _show_media_prompt(update, context)
 
         return True
-
 
 
     elif step == Step.DESCRIPTION:
@@ -213,7 +200,6 @@ async def handle_create_text(update, context, db):
         return True
 
 
-
     elif step == Step.CONTACT:
 
         context.user_data['create_data']['contact'] = user_text
@@ -223,7 +209,6 @@ async def handle_create_text(update, context, db):
         await _show_channel_prompt(update, context)
 
         return True
-
 
 
     elif step == Step.DRAW_TIME:
@@ -249,7 +234,6 @@ async def handle_create_text(update, context, db):
         return True
 
 
-
     elif step == Step.DRAW_COUNT:
 
         try:
@@ -267,7 +251,6 @@ async def handle_create_text(update, context, db):
         await _show_prize_input(update, context, db, is_new=True)
 
         return True
-
 
 
     elif step == Step.ADD_PRIZE:
@@ -303,7 +286,6 @@ async def handle_create_text(update, context, db):
         return True
 
 
-
     elif step == Step.PRIZE_COUNT:
 
         try:
@@ -321,7 +303,6 @@ async def handle_create_text(update, context, db):
         return True
 
 
-
     elif step == Step.KEYWORD:
 
         context.user_data['create_data']['keyword'] = user_text
@@ -329,7 +310,6 @@ async def handle_create_text(update, context, db):
         await _show_confirm(update, context, db)
 
         return True
-
 
 
     elif step == Step.MEDIA:
@@ -363,7 +343,6 @@ async def handle_create_text(update, context, db):
         )
 
         return True
-
 
 
     elif step == Step.CHANNEL:
@@ -403,9 +382,7 @@ async def handle_create_text(update, context, db):
         return True
 
 
-
     return False
-
 
 
 def _extract_username_from_link(link: str) -> str:
@@ -493,7 +470,6 @@ async def _add_prize_done(update, context, count):
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
 
 
-
 async def _show_channel_prompt(update, context):
 
     msg = _step_text(5, 10, '频道订阅') + '\n请输入频道链接或用户名（订阅后才可参与）：\n\n支持以下格式：\n1. 频道用户名：@channel_username\n2. 公开链接：https://t.me/channel_username\n3. 邀请链接：https://t.me/+xxxxxx\n4. 名称|链接：我的频道|https://t.me/+xxxxxx\n\n✨ 输入 @用户名 或 t.me/链接 会自动获取频道名称'
@@ -507,7 +483,6 @@ async def _show_channel_prompt(update, context):
     else:
 
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
-
 
 
 async def _show_channel_loop(update, context):
@@ -537,7 +512,6 @@ async def _show_channel_loop(update, context):
     else:
 
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb, disable_web_page_preview=True)
-
 
 
 async def _show_prize_input(update, context, db, is_new=True):
@@ -579,7 +553,6 @@ async def _show_prize_input(update, context, db, is_new=True):
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=_kb(keyboard))
 
 
-
 async def handle_create_callback(update, context, db):
 
     query = update.callback_query
@@ -587,7 +560,6 @@ async def handle_create_callback(update, context, db):
     data = query.data
 
     step = context.user_data.get('create_step')
-
 
 
     if data == 'create_cancel_btn':
@@ -607,11 +579,9 @@ async def handle_create_callback(update, context, db):
         return
 
 
-
     if not step:
 
         return
-
 
 
     if data == 'create_skip_desc':
@@ -657,7 +627,6 @@ async def handle_create_callback(update, context, db):
             ])
 
         )
-
 
 
     elif data == 'create_draw_time_btn':
@@ -727,7 +696,6 @@ async def handle_create_callback(update, context, db):
         await _show_prize_input(update, context, db, is_new=True)
 
 
-
     elif data == 'create_draw_count_btn':
 
         await query.answer()
@@ -777,7 +745,6 @@ async def handle_create_callback(update, context, db):
             context.user_data['create_step'] = Step.ADD_PRIZE
 
             await _show_prize_input(update, context, db, is_new=True)
-
 
 
     elif data.startswith('create_prize_') and data != 'create_prize_custom':
@@ -837,7 +804,6 @@ async def handle_create_callback(update, context, db):
         await query.edit_message_text(_step_text(7, 10, '奖品') + '\n请输入商品名称：\n例如：100元优惠券包', parse_mode='HTML', reply_markup=_kb([cancel_btn]))
 
 
-
     elif data.startswith('create_pcount_'):
 
         await query.answer()
@@ -853,7 +819,6 @@ async def handle_create_callback(update, context, db):
             count = int(data.replace('create_pcount_', ''))
 
             await _add_prize_done(update, context, count)
-
 
 
     elif data == 'create_add_more':
@@ -889,7 +854,6 @@ async def handle_create_callback(update, context, db):
             ])
 
         )
-
 
 
     elif data == 'create_part_keyword':
@@ -965,7 +929,6 @@ async def handle_create_callback(update, context, db):
         await _show_confirm(update, context, db)
 
 
-
     elif data == 'create_add_channel':
 
         await query.answer()
@@ -1035,7 +998,6 @@ async def handle_create_callback(update, context, db):
             )
 
 
-
     elif data == 'create_skip_media':
 
         await query.answer()
@@ -1049,7 +1011,6 @@ async def handle_create_callback(update, context, db):
             parse_mode='HTML', reply_markup=_kb([skip_btn('create_skip_desc'), flow_back_btn, cancel_btn])
 
         )
-
 
 
     elif data == 'create_back':
@@ -1169,7 +1130,6 @@ async def handle_create_callback(update, context, db):
             await query.answer('无法返回', show_alert=True)
 
 
-
     elif data == 'create_confirm_yes':
 
         await query.answer('✅ 发布成功！')
@@ -1177,6 +1137,8 @@ async def handle_create_callback(update, context, db):
         data_dict = context.user_data.get('create_data', {})
 
         data_dict['channel_id'] = '\n'.join([ch['link'] for ch in data_dict.get('channels', [])])
+
+        data_dict['status'] = 'active'
 
         activity_id = await db.create_activity(data_dict)
 
@@ -1187,6 +1149,7 @@ async def handle_create_callback(update, context, db):
         bot_username = _get_bot_username(update, context)
 
         deeplink = 'https://t.me/' + bot_username + '?start=join_' + str(activity_id)
+
 
         deeplink_html = '<a href="' + deeplink + '">\U0001f517 点击参与抽奖</a>'
 
@@ -1300,11 +1263,7 @@ async def handle_create_callback(update, context, db):
             await query.message.reply_text(share_text, parse_mode='HTML', disable_web_page_preview=True)
 
 
-
-
-
 # Publish to specific channel handler
-
 
 
 async def handle_publish_callback(update, context, db):
@@ -1440,7 +1399,6 @@ async def _show_confirm(update, context, db):
         return
 
 
-
     kb = InlineKeyboardMarkup([
 
         [InlineKeyboardButton('\u2705 \u786e\u8ba4\u53d1\u5e03', callback_data='create_confirm_yes'),
@@ -1456,9 +1414,6 @@ async def _show_confirm(update, context, db):
     else:
 
         await update.message.reply_text(text, parse_mode='HTML', reply_markup=kb)
-
-
-
 
 
 async def _show_media_prompt(update, context):
@@ -1478,14 +1433,8 @@ async def _show_media_prompt(update, context):
         await update.callback_query.edit_message_text(msg, parse_mode='HTML', reply_markup=kb, disable_web_page_preview=True)
 
 
-
     else:
 
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
-
-
-
-
-
 
 
