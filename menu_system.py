@@ -171,8 +171,8 @@ async def show_operators_menu(update, context, db):
     else:
         lines.append('  \u6682\u65e0\u64cd\u4f5c\u5458\n')
     lines.append('')
-    lines.append('\u53d1\u9001 /op add <id> \u6dfb\u52a0\u64cd\u4f5c\u5458')
-    lines.append('\u53d1\u9001 /op remove <id> \u5220\u9664\u64cd\u4f5c\u5458')
+    lines.append('\u53d1\u9001 /op add &lt;id&gt; \u6dfb\u52a0\u64cd\u4f5c\u5458')
+    lines.append('\u53d1\u9001 /op remove &lt;id&gt; \u5220\u9664\u64cd\u4f5c\u5458')
 
     kb = InlineKeyboardMarkup([[
         InlineKeyboardButton('\U0001f519 \u8fd4\u56de\u4e3b\u83dc\u5355', callback_data='menu_main')
@@ -189,7 +189,7 @@ async def show_backup_menu(update, context, db):
 
 async def handle_operator_action(update, context, db):
     """Handle operator management actions."""
-    await update.callback_query.answer('\u8bf7\u4f7f\u7528 /op add <id> \u6216 /op remove <id> \u547d\u4ee4', show_alert=True)
+    await update.callback_query.answer('\u8bf7\u4f7f\u7528 /op add &lt;id&gt; \u6216 /op remove &lt;id&gt; \u547d\u4ee4', show_alert=True)
 
 async def handle_activity_action(update, context, db):
     """Handle activity actions."""

@@ -587,8 +587,8 @@ async def cmd_op(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             '👥 <b>操作员管理</b>\n\n'
             '/op list — 查看\n'
-            '/op add [ID] — 添加\n'
-            '/op remove [ID] — 移除',
+            '/op add [ID] - 添加\n'
+            '/op remove [ID] - 移除',
             parse_mode='HTML'
         )
 # ═══════════════════════════════════════════════
