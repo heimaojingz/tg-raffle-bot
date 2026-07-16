@@ -1,4 +1,4 @@
 ﻿python-telegram-bot>=20.0
 aiosqlite>=0.20.0
 python-dotenv>=1.0.0
-# cache bust 2026-07-16 23:25:47
+# cache bust 2026-07-05
