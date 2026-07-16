@@ -36,7 +36,7 @@ import menu_system as menu
 import create_flow
 
 # ── Config ──
-BOT_TOKEN = os.getenv("BOT_TOKEN", os.getenv("RAFFLE_BOT_TOKEN"))
+BOT_TOKEN = os.getenv("BOT_TOKEN", os.getenv("RAFFLE_BOT_TOKEN", "8693033203:AAERJf8l8_f3TZQKEwvvIXdfzjT56KCb96E"))
 if not BOT_TOKEN:
     raise RuntimeError("No BOT_TOKEN or RAFFLE_BOT_TOKEN environment variable set")
 # Owner is auto-detected from first /start, stored in database
