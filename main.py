@@ -815,9 +815,20 @@ async def post_init(app):
         app.create_task(_keep_alive(app))
         try:
             from telegram import BotCommand
+            # Admin commands for all users (permission checked in handlers)
             await app.bot.set_my_commands([
-                BotCommand("start", "打开主菜单 / 查看活动"),
+                BotCommand("start", "打开主菜单"),
+                BotCommand("join", "参与抽奖"),
+                BotCommand("create", "[管理] 创建新活动"),
+                BotCommand("list", "[管理] 活动列表"),
+                BotCommand("stats", "[管理] 数据统计"),
             ])
+            # Set menu button to show command list
+            try:
+                from telegram import MenuButtonCommands
+                await app.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+            except Exception:
+                pass
             logger.info("Bot commands set")
         except Exception as e:
             logger.warning(f"Failed to set commands: {e}")
