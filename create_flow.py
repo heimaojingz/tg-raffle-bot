@@ -958,7 +958,7 @@ async def handle_create_callback(update, context, db):
         else:
             await query.answer('频道不存在', show_alert=True)
         await _show_channel_loop(update, context)
-elif data == 'create_add_channel':
+    elif data == 'create_add_channel':
 
         await query.answer()
 
