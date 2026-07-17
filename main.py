@@ -22,6 +22,7 @@ import os
 from datetime import datetime
 from collections import defaultdict
 import html
+import secrets
 
 from telegram import (
     Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
 
 # ?? Owner/Admin tracking ??
 ADMIN_IDS = set()  # Populated from DB owner on startup
+SETUP_CODE = None  # Set in post_init for owner recovery
 
 # Simple in-memory rate limiter: {key: [timestamp, ...]}
 _rate_limiter = defaultdict(list)
@@ -595,6 +597,35 @@ async def cmd_op(update: Update, context: ContextTypes.DEFAULT_TYPE):
 #  /create – 创建活动（多步向导）
 # ═══════════════════════════════════════════════
 
+async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Alias for /op - manage operators."""
+    return await cmd_op(update, context)
+
+async def cmd_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Reset owner using setup code from Railway logs."""
+    owner = await db.get_owner_id()
+    if owner:
+        await update.message.reply_text('✅ 系统已有管理员，无需设置。')
+        return
+    global SETUP_CODE
+    if not SETUP_CODE:
+        await update.message.reply_text('❌ 未生成设置码，请检查 Railway 日志。')
+        return
+    args = context.args
+    if not args:
+        await update.message.reply_text(f'🔑 请输入设置码。如不知道，请查看 Railway 日志。')
+        return
+    if args[0] != SETUP_CODE:
+        await update.message.reply_text('❌ 设置码错误。')
+        return
+    uid = update.effective_user.id
+    await db.set_owner_id(uid)
+    ADMIN_IDS.add(uid)
+    SETUP_CODE = None
+    await update.message.reply_text('✅ 设置成功！你现在是管理员了。发送 /start 查看面板。')
+    logger.info(f"Owner reset via setup code: {uid}")
+
+
 async def cmd_create(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin_or_op(update):
         await update.message.reply_text("⛔ 仅管理员可用此命令。")
@@ -793,6 +824,7 @@ async def deep_link_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def post_init(app):
     try:
+        global SETUP_CODE
         await db.init_db()
         env_admins = os.getenv("ADMIN_IDS", "")
         if env_admins:
@@ -808,8 +840,12 @@ async def post_init(app):
             logger.info(f"Owner loaded: {owner}")
         else:
             logger.warning("No owner set - first /start will set owner")
-        ADMIN_IDS.add(5405770555)
-        logger.info("Admin 5405770555 added")
+        if not owner:
+            SETUP_CODE = secrets.token_hex(4)
+            logger.info("=" * 50)
+            logger.info(f"  🔑 SETUP CODE: {SETUP_CODE}")
+            logger.info("  Send /setup <code> to set owner")
+            logger.info("=" * 50)
         logger.info("Database initialized.")
         asyncio.create_task(_auto_draw_loop())
         app.create_task(_keep_alive(app))
@@ -949,6 +985,8 @@ def main():
     app.add_handler(CommandHandler("export", cmd_export))
     app.add_handler(CommandHandler("backup", cmd_backup))
     app.add_handler(CommandHandler("op", cmd_op))
+    app.add_handler(CommandHandler("admin", cmd_admin))
+    app.add_handler(CommandHandler("setup", cmd_setup))
     app.add_handler(CommandHandler("media", cmd_media))
     app.add_handler(CommandHandler("link", cmd_link))
 
