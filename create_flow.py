@@ -614,7 +614,7 @@ async def handle_create_callback(update, context, db):
 
         context.user_data['create_step'] = Step.CHANNEL
 
-        await _show_channel_prompt(update, context)
+        await _show_channel_prompt(update, context, db)
 
     elif data == 'create_skip_link':
 
@@ -912,7 +912,7 @@ async def handle_create_callback(update, context, db):
 
             context.user_data['create_step'] = Step.CHANNEL
 
-            await _show_channel_prompt(update, context)
+            await _show_channel_prompt(update, context, db)
 
     elif data == 'create_part_private':
 
