@@ -636,12 +636,7 @@ async def cmd_preset(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Show list
         chs = await db.list_preset_channels()
         if not chs:
-            await update.message.reply_text('📭 暂无预设频道。
-
-用法：
-/preset add 名称|链接  — 添加
-/preset del <id>  — 删除
-/preset list     — 查看所有')
+            await update.message.reply_text('📭 暂无预设频道。\n\n用法：\n/preset add 名称|链接  — 添加\n/preset del <id>  — 删除\n/preset list     — 查看所有')
             return
         lines = ['<b>📢 预设频道列表</b>\n']
         for c in chs:
