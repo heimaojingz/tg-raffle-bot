@@ -626,6 +626,64 @@ async def cmd_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Owner reset via setup code: {uid}")
 
 
+async def cmd_preset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Manage preset channels for quick-add during activity creation."""
+    if not await is_super_admin(update):
+        await update.message.reply_text('⛔ 仅超级管理员可用')
+        return
+    args = context.args
+    if not args:
+        # Show list
+        chs = await db.list_preset_channels()
+        if not chs:
+            await update.message.reply_text('📭 暂无预设频道。
+
+用法：
+/preset add 名称|链接  — 添加
+/preset del <id>  — 删除
+/preset list     — 查看所有')
+            return
+        lines = ['<b>📢 预设频道列表</b>\n']
+        for c in chs:
+            name = html.escape(c['name'])
+            link = html.escape(c['link'])
+            lines.append(f'  #{c["id"]} <a href="{link}">{name}</a>')
+        lines.append(f'\n共 {len(chs)} 个')
+        lines.append('\n/preset add 名称|链接  — 添加\n/preset del <id>  — 删除')
+        await update.message.reply_text('\n'.join(lines), parse_mode='HTML', disable_web_page_preview=True)
+        return
+    action = args[0].lower()
+    if action == 'add' and len(args) >= 2:
+        full = ' '.join(args[1:])
+        if '|' in full:
+            parts = full.rsplit('|', 1)
+            name = parts[0].strip()
+            link = parts[1].strip()
+        else:
+            await update.message.reply_text('⚠️ 格式错误。请使用：/preset add 名称|链接\n例如：/preset add 我的频道|https://t.me/+xxxxxx')
+            return
+        from create_flow import _clean_channel_link
+        cleaned = _clean_channel_link(link)
+        ok = await db.add_preset_channel(name, cleaned)
+        if ok:
+            await update.message.reply_text(f'✅ 预设频道已添加：{html.escape(name)} ({cleaned})', parse_mode='HTML')
+        else:
+            await update.message.reply_text('❌ 添加失败')
+    elif action == 'del' and len(args) >= 2:
+        try:
+            cid = int(args[1])
+        except ValueError:
+            await update.message.reply_text('⚠️ ID 必须是数字。使用 /preset list 查看。')
+            return
+        ok = await db.delete_preset_channel(cid)
+        if ok:
+            await update.message.reply_text(f'✅ 已删除预设频道 #{cid}')
+        else:
+            await update.message.reply_text(f'❌ 删除失败，ID #{cid} 不存在')
+    else:
+        await update.message.reply_text('用法：\n/preset add 名称|链接  — 添加\n/preset del <id>  — 删除\n/preset list     — 查看所有')
+
+
 async def cmd_create(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin_or_op(update):
         await update.message.reply_text("⛔ 仅管理员可用此命令。")
@@ -858,6 +916,7 @@ async def post_init(app):
                 BotCommand("create", "[管理] 创建新活动"),
                 BotCommand("list", "[管理] 活动列表"),
                 BotCommand("stats", "[管理] 数据统计"),
+                BotCommand("preset", "[管理] 预设频道"),
             ])
             # Set menu button to show command list
             try:
@@ -960,10 +1019,16 @@ def main():
             return
         try:
             logger.info('menu_callback: ' + str(update.callback_query.data))
+            data = update.callback_query.data
+            if data == 'menu_operators' or data.startswith('op_'):
+                if not await is_super_admin(update):
+                    await update.callback_query.answer('⛔ 仅超级管理员可用', show_alert=True)
+                    return
             if update.callback_query.data == 'menu_create':
                 await create_flow.start_create_flow(update, context, db)
                 return
-            await menu.menu_router(update, context, db)
+            is_super = await is_super_admin(update)
+            await menu.menu_router(update, context, db, is_super)
         except Exception as e:
             logger.error(f'menu_callback error: {e}', exc_info=True)
             await update.callback_query.answer(f'Error: {e}', show_alert=True)
@@ -987,6 +1052,7 @@ def main():
     app.add_handler(CommandHandler("op", cmd_op))
     app.add_handler(CommandHandler("admin", cmd_admin))
     app.add_handler(CommandHandler("setup", cmd_setup))
+    app.add_handler(CommandHandler("preset", cmd_preset))
     app.add_handler(CommandHandler("media", cmd_media))
     app.add_handler(CommandHandler("link", cmd_link))
 

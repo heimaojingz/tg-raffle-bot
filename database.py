@@ -87,6 +87,13 @@ async def init_db():
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            
+            CREATE TABLE IF NOT EXISTS preset_channels (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                link TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
             CREATE TABLE IF NOT EXISTS admin_states (
                 user_id INTEGER PRIMARY KEY,
                 state TEXT,
@@ -537,3 +544,30 @@ async def list_operators():
         cursor = await db.execute("SELECT * FROM operators ORDER BY added_at")
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]
+
+
+# Preset channels
+
+async def add_preset_channel(name: str, link: str) -> bool:
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute("INSERT INTO preset_channels (name, link) VALUES (?, ?)", (name, link))
+            await db.commit()
+            return True
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f'add_preset_channel: {e}')
+        return False
+
+async def list_preset_channels():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM preset_channels ORDER BY created_at")
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
+async def delete_preset_channel(channel_id: int) -> bool:
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("DELETE FROM preset_channels WHERE id = ?", (channel_id,))
+        await db.commit()
+        return cursor.rowcount > 0

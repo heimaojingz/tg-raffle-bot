@@ -206,7 +206,7 @@ async def handle_create_text(update, context, db):
 
         context.user_data['create_step'] = Step.CHANNEL
 
-        await _show_channel_prompt(update, context)
+        await _show_channel_prompt(update, context, db)
 
         return True
 
@@ -470,11 +470,21 @@ async def _add_prize_done(update, context, count):
         await update.message.reply_text(msg, parse_mode='HTML', reply_markup=kb)
 
 
-async def _show_channel_prompt(update, context):
+async def _show_channel_prompt(update, context, db):
 
-    msg = _step_text(5, 10, '频道订阅') + '\n请输入频道链接或用户名（订阅后才可参与）：\n\n支持以下格式：\n1. 频道用户名：@channel_username\n2. 公开链接：https://t.me/channel_username\n3. 邀请链接：https://t.me/+xxxxxx\n4. 名称|链接：我的频道|https://t.me/+xxxxxx\n\n✨ 输入 @用户名 或 t.me/链接 会自动获取频道名称'
+    try:
+        preset_chs = await db.list_preset_channels()
+    except Exception:
+        preset_chs = []
 
-    kb = _kb([skip_btn('create_skip_link'), flow_back_btn, cancel_btn])
+    msg = _step_text(5, 10, '频道订阅') + '\n请输入频道链接或用户名（订阅后才可参与）：\n\n支持以下格式：\n1. 频道用户名：@channel_username\n2. 公开链接：https://t.me/channel_username\n3. 邀请链接：https://t.me/+xxxxxx\n4. 名称|链接：我的频道|https://t.me/+xxxxxx'
+    if preset_chs:
+        msg += '\n\n📌 <b>预设频道（点击快速添加）：</b>' + '\n' + '\n'.join([f'  #{c["id"]} {html.escape(c["name"])}' for c in preset_chs])
+
+    kb_rows = [[skip_btn('create_skip_link'), flow_back_btn, cancel_btn]]
+    for c in preset_chs:
+        kb_rows.insert(-1, [InlineKeyboardButton(f'➕ {c["name"]}', callback_data=f'create_preset_ch_{c["id"]}')])
+    kb = _kb(kb_rows)
 
     if update.callback_query:
 
@@ -929,7 +939,26 @@ async def handle_create_callback(update, context, db):
         await _show_confirm(update, context, db)
 
 
-    elif data == 'create_add_channel':
+        elif data.startswith('create_preset_ch_'):
+        await query.answer()
+        cid = int(data.replace('create_preset_ch_', ''))
+        try:
+            chs = await db.list_preset_channels()
+            ch = next((c for c in chs if c['id'] == cid), None)
+        except Exception:
+            ch = None
+        if ch:
+            # Check if already added
+            existing = [c for c in context.user_data['create_data']['channels'] if c['link'] == ch['link']]
+            if existing:
+                await query.answer('该频道已添加', show_alert=True)
+            else:
+                context.user_data['create_data']['channels'].append({'name': ch['name'], 'link': ch['link']})
+                await query.answer(f'✅ 已添加：{ch["name"]}', show_alert=True)
+        else:
+            await query.answer('频道不存在', show_alert=True)
+        await _show_channel_loop(update, context)
+elif data == 'create_add_channel':
 
         await query.answer()
 

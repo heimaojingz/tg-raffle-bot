@@ -56,7 +56,7 @@ async def show_main_menu(update: Update, context, db):
 
 
 
-async def menu_router(update, context, db):
+async def menu_router(update, context, db, show_operators=True):
     """Route menu callback queries to appropriate handlers."""
     query = update.callback_query
     data = query.data
