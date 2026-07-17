@@ -481,7 +481,7 @@ async def _show_channel_prompt(update, context, db):
     if preset_chs:
         msg += '\n\n📌 <b>预设频道（点击快速添加）：</b>' + '\n' + '\n'.join([f'  #{c["id"]} {html.escape(c["name"])}' for c in preset_chs])
 
-    kb_rows = [[skip_btn('create_skip_link'), flow_back_btn, cancel_btn]]
+    kb_rows = [skip_btn('create_skip_link'), flow_back_btn, cancel_btn]
     for c in preset_chs:
         kb_rows.insert(-1, [InlineKeyboardButton(f'➕ {c["name"]}', callback_data=f'create_preset_ch_{c["id"]}')])
     kb = _kb(kb_rows)
@@ -1050,17 +1050,17 @@ async def handle_create_callback(update, context, db):
 
         data_dict = context.user_data.get('create_data', {})
 
-        contactedisp = '\n\n当前联系方式：' + html.escape(contacted) + '\n\n请输入新联系方式（或直接发送覆盖）：'
-
-        describedisp = '\n\n当前说明：' + html.escape(described) + '\n\n请输入新说明（或直接发送覆盖）：'
-
-        titledisp = '\n\n当前标题：' + html.escape(titled) + '\n\n请输入新标题（或直接发送覆盖）：'
-
         contacted = data_dict.get('contact', '')
 
         described = data_dict.get('description', '')
 
         titled = data_dict.get('title', '')
+
+        contactedisp = '\n\n当前联系方式：' + html.escape(contacted) + '\n\n请输入新联系方式（或直接发送覆盖）：'
+
+        describedisp = '\n\n当前说明：' + html.escape(described) + '\n\n请输入新说明（或直接发送覆盖）：'
+
+        titledisp = '\n\n当前标题：' + html.escape(titled) + '\n\n请输入新标题（或直接发送覆盖）：'
 
         draw_type = data_dict.get('draw_type', 1)
 
