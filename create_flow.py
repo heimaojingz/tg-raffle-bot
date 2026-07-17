@@ -966,6 +966,25 @@ async def handle_create_callback(update, context, db):
 
         await query.edit_message_text('继续添加频道：\n可输入 @频道用户名 或链接（自动获取名称）\n格式：名称|链接\n例如：金悦小姐姐|https://t.me/+xxxxxx', parse_mode='HTML', reply_markup=_kb([skip_btn('create_skip_channel'), cancel_btn]))
 
+    elif data == 'create_save_preset':
+        await query.answer()
+        chs = context.user_data['create_data']['channels']
+        if not chs:
+            await query.answer('暂无频道可保存', show_alert=True)
+            return
+        saved = 0
+        for ch in chs:
+            try:
+                ok = await db.add_preset_channel(ch.get('name', ch['link']), ch['link'])
+                if ok:
+                    saved += 1
+            except Exception:
+                pass
+        if saved:
+            await query.answer(f'✅ 已保存 {saved} 个频道到预设', show_alert=True)
+        else:
+            await query.answer('保存失败（可能已存在）', show_alert=True)
+
     elif data == 'create_done_channels':
 
         await query.answer()
