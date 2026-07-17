@@ -939,7 +939,7 @@ async def handle_create_callback(update, context, db):
         await _show_confirm(update, context, db)
 
 
-        elif data.startswith('create_preset_ch_'):
+    elif data.startswith('create_preset_ch_'):
         await query.answer()
         cid = int(data.replace('create_preset_ch_', ''))
         try:
