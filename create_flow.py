@@ -511,6 +511,8 @@ async def _show_channel_loop(update, context):
 
          InlineKeyboardButton('✅ 完成', callback_data='create_done_channels')],
 
+        [InlineKeyboardButton('💾 保存为常用频道', callback_data='create_save_preset')],
+
         cancel_btn
 
     ])
